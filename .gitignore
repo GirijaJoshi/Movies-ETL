@@ -5,6 +5,9 @@ ratings.csv
 ratings_small.csv
 keywords.csv
 
+# config files
+config.py
+
 # direcory to ignore
 3405_6663_bundle_archive/
 
