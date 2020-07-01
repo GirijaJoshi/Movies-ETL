@@ -1,3 +1,10 @@
+# files not to be added
+credits.csv
+movies_metadata.csv
+ratings.csv
+ratings_small.csv
+keywords.csv
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
