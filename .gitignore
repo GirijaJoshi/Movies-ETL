@@ -5,6 +5,9 @@ ratings.csv
 ratings_small.csv
 keywords.csv
 
+# direcory to ignore
+3405_6663_bundle_archive/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
