@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
-
-
 import pandas as pd
 import numpy as np
 import json
@@ -13,9 +10,6 @@ from sqlalchemy import create_engine
 import psycopg2
 import time
 from config import username, password
-
-
-# In[2]:
 
 
 def clean_movie(movie):
@@ -65,9 +59,6 @@ def clean_movie(movie):
     return movie
 
 
-# In[3]:
-
-
 # need a function to turn the extracted values into a numeric value.
 def parse_dollars(s):
     # if s is not a string, return NaN
@@ -115,18 +106,12 @@ def parse_dollars(s):
         return np.nan
 
 
-# In[4]:
-
-
 # Function that fills in missing data for a column pair and then drops the redundant column.
 def fill_missing_kaggle_data(df, kaggle_column, wiki_column):
     df[kaggle_column] = df.apply(
         lambda row: row[wiki_column] if row[kaggle_column] == 0 else row[kaggle_column]
         , axis=1)
     df.drop(columns=wiki_column, inplace=True)
-
-
-# In[5]:
 
 
 class SQL_Database:
@@ -192,7 +177,23 @@ class SQL_Database:
             return False
             
         
-    
+    def delete_data_from_table(self, table_name):
+        '''
+        This function will delete all data from table if exists
+        '''
+        print(f'Please wait deleting data from table: {table_name}')
+        try:
+            check=self.engine.has_table(table_name)
+            if check:
+                postgreSQL_select_Query = f'DELETE FROM {table_name}'
+                self.cursor.execute(postgreSQL_select_Query)
+                self.conn.commit()
+                return True  
+        except Exception as error:
+            print(f'Oops! An exception has occured: {error}')
+            return False
+            
+        
     def count_number_of_table_rows(self, table_name):
         '''
         This will count the number of rows inserted and will return the count
@@ -209,9 +210,6 @@ class SQL_Database:
         if(self.conn):
             self.cursor.close()
             self.conn.close()
-
-
-# In[6]:
 
 
 def perform_etl(wiki_movies_raw_file_name, kaggle_metadata_file_name, ratings_file_name):
@@ -433,11 +431,15 @@ def perform_etl(wiki_movies_raw_file_name, kaggle_metadata_file_name, ratings_fi
     # connect to DB
     db_handle = SQL_Database(protocol, username, password, location, port, db)
     if 'Connected' not in db_handle.connect():
-        print('Failed to connect to DB')
+        print('Failed to connect to DB, exiting.....')
         return
     
-    # append data tp table
     table_name = 'movies'
+    if not db_handle.delete_data_from_table(table_name):
+        print(f'Failed to delete data from table: {table_name}, ignore and continue....')
+    time.sleep(5)
+        
+    # append data to table
     if not db_handle.insert_or_create(movies_df, table_name):
         print(f'Failed to insert to table: {table_name}, exiting...')
         return
@@ -448,6 +450,10 @@ def perform_etl(wiki_movies_raw_file_name, kaggle_metadata_file_name, ratings_fi
     rows_imported = 0
     start_time = time.time()
     table_name = 'ratings'
+    
+    if not db_handle.delete_data_from_table(table_name):
+        print(f'Failed to delete data from table: {table_name}, ignore and continue....')
+    
     try:
         
         for data in pd.read_csv(ratings_file_name, chunksize=1000000):
@@ -472,15 +478,7 @@ def perform_etl(wiki_movies_raw_file_name, kaggle_metadata_file_name, ratings_fi
     print(f'Total time to import ratings data. {tot_secs} total seconds elapsed')
     
     db_handle.close_database_connection()
-
-
-# In[ ]:
-
-
-
-
-
-# In[7]:
+    print('\nExecution Finished')
 
 
 wiki_movies_raw_file_name = os.path.join(".", "wikipedia.movies.json")
@@ -488,8 +486,6 @@ kaggle_metadata_file_name = os.path.join(".", "3405_6663_bundle_archive", "movie
 ratings_file_name = os.path.join(".", "3405_6663_bundle_archive", "ratings.csv")
 perform_etl(wiki_movies_raw_file_name, kaggle_metadata_file_name, ratings_file_name)
 
-
-# In[ ]:
 
 
 
